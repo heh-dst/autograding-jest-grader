@@ -1,23 +1,27 @@
-name: The name of your action here
-description: Provide a description here
-author: Your name or organization here
+name: autograding-jest-grader
+description: GitHub Classroom autograder using Jest
+author: François Roland <francois.roland@heh.be>
 
 # Add your action's branding here. This will appear on the GitHub Marketplace.
 branding:
-  icon: heart
-  color: red
+  icon: check-square
+  color: green
 
 # Define your inputs here.
 inputs:
-  milliseconds:
-    description: Your input description here
-    required: true
-    default: '1000'
+  setup-command:
+    description: "Command to execute prior to the test, typically for environment setup or dependency installation."
+    default: "npm install"
+    required: false
+  timeout:
+    description: "Duration (in seconds) before the test is terminated. Defaults to 60 seconds with a maximum limit of 3600 seconds."
+    default: "60"
+    required: false
 
 # Define your outputs here.
 outputs:
-  time:
-    description: Your output description here
+  result:
+    description: "Outputs the result of the grader, indicating the success or failure of the test."
 
 runs:
   using: node24
