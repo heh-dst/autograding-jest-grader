@@ -103,4 +103,33 @@ describe('main.ts', () => {
       expect(decodedResult.status).toBe(expected)
     }
   )
+
+  it('Includes the individual test results', async () => {
+    getExecOutput.mockImplementationOnce(() =>
+      Promise.resolve({
+        exitCode: 0,
+        stdout: JSON.stringify({
+          numFailedTests: 0,
+          numPassedTests: 1,
+          numTotalTests: 1,
+          success: true,
+          testResults: [
+            {
+              name: 'main.ts Sets the result output',
+              status: 'passed'
+            }
+          ]
+        }),
+        stderr: ''
+      })
+    )
+    // Verify the result status was set.
+    const decodedResult = await runAndDecodeResult()
+    expect(decodedResult.tests).toEqual([
+      {
+        name: 'main.ts Sets the result output',
+        status: 'passed'
+      }
+    ])
+  })
 })

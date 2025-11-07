@@ -1,6 +1,13 @@
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 
+type OutputType = {
+  version: number
+  max_score: number
+  status: 'pass' | 'fail'
+  tests?: unknown[]
+}
+
 /**
  * The main function for the action.
  *
@@ -29,10 +36,13 @@ export async function run(): Promise<void> {
     core.debug(new Date().toTimeString())
 
     const testResult = JSON.parse(testOutput.stdout)
-    const result = {
+    const result: OutputType = {
       version: 1,
       max_score: testResult.numTotalTests,
       status: testResult.success ? 'pass' : 'fail'
+    }
+    if (testResult.testResults) {
+      result['tests'] = testResult.testResults
     }
 
     core.setOutput(
