@@ -202,7 +202,73 @@ describe('main.ts', () => {
     expect(decodedResult.tests).toEqual([
       {
         name: 'calculerMoyenne calcule la moyenne de plusieurs notes',
-        status: 'pass'
+        status: 'pass',
+        score: 1
+      }
+    ])
+  })
+
+  it('Includes the individual failed test', async () => {
+    const result: FormattedTestResults = {
+      numFailedTests: 1,
+      numPassedTests: 0,
+      numTotalTests: 1,
+      numFailedTestSuites: 1,
+      numPassedTestSuites: 0,
+      numPendingTestSuites: 0,
+      numPendingTests: 0,
+      numRuntimeErrorTestSuites: 0,
+      numTotalTestSuites: 1,
+      snapshot: {
+        added: 0,
+        didUpdate: false,
+        failure: false,
+        filesAdded: 0,
+        filesRemoved: 0,
+        filesRemovedList: [],
+        filesUnmatched: 0,
+        filesUpdated: 0,
+        matched: 0,
+        total: 0,
+        unchecked: 0,
+        uncheckedKeysByFile: [],
+        unmatched: 0,
+        updated: 0
+      },
+      startTime: Date.now(),
+      success: true,
+      testResults: [
+        {
+          assertionResults: [
+            {
+              ancestorTitles: ['calculerMoyenne'],
+              duration: 1,
+              failureMessages: [],
+              fullName: 'calculerMoyenne calcule la moyenne de plusieurs notes',
+              location: null,
+              status: 'failed',
+              title: 'calcule la moyenne de plusieurs notes'
+            }
+          ],
+          endTime: 1762529939635,
+          message: '',
+          name: 'D:\\\\programmation-tg-templates\\\\workspace\\\\types-modules-TP3\\\\src\\\\test\\\\affichage.test.ts',
+          startTime: 1762529939435,
+          status: 'passed',
+          summary: '',
+          coverage: null
+        }
+      ],
+      wasInterrupted: false
+    }
+    mockedRunTest.mockResolvedValueOnce(JSON.stringify(result))
+    // Verify the result status was set.
+    const decodedResult = await runAndDecodeResult()
+    expect(decodedResult.tests).toEqual([
+      {
+        name: 'calculerMoyenne calcule la moyenne de plusieurs notes',
+        status: 'fail',
+        score: 0
       }
     ])
   })

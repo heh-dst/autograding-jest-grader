@@ -30,6 +30,7 @@ export type TestType = {
   line_no?: number
   message?: string
   test_code?: string
+  score: number
 }
 
 export type ResultType = {

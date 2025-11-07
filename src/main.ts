@@ -29,7 +29,8 @@ function parseAssertionResult(assertionResult: AssertionResult): TestType {
         ? 'pass'
         : assertionResult.status === 'failed'
           ? 'fail'
-          : 'error'
+          : 'error',
+    score: assertionResult.status === 'passed' ? 1 : 0
   }
   return testResult
 }

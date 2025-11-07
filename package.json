@@ -1,7 +1,7 @@
 {
   "name": "autograding-jest-grader",
   "description": "GitHub Classroom autograder using Jest",
-  "version": "v1.0.11",
+  "version": "v1.0.12",
   "author": "François Roland <francois.roland@heh.be>",
   "type": "module",
   "private": true,
