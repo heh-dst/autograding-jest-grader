@@ -27398,16 +27398,22 @@ function parseAssertionResults(testResults) {
     });
 }
 function parseJson(jsonString) {
-    const testResult = JSON.parse(jsonString.replaceAll('\\', '\\\\'));
-    const result = {
-        version: 1,
-        max_score: testResult.numTotalTests,
-        status: testResult.success ? 'pass' : 'fail'
-    };
-    if (testResult.testResults) {
-        result.tests = parseAssertionResults(testResult.testResults);
+    try {
+        const testResult = JSON.parse(jsonString);
+        const result = {
+            version: 1,
+            max_score: testResult.numTotalTests,
+            status: testResult.success ? 'pass' : 'fail'
+        };
+        if (testResult.testResults) {
+            result.tests = parseAssertionResults(testResult.testResults);
+        }
+        return result;
     }
-    return result;
+    catch (error) {
+        coreExports.error(`Error parsing JSON test results:\n${error}`);
+        throw error;
+    }
 }
 /**
  * The main function for the action.

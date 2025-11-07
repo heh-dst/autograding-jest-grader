@@ -43,19 +43,22 @@ function parseAssertionResults(testResults: TestResult[]): TestType[] {
 }
 
 function parseJson(jsonString: string): ResultType {
-  const testResult: FormattedTestResults = JSON.parse(
-    jsonString.replaceAll('\\', '\\\\')
-  )
+  try {
+    const testResult: FormattedTestResults = JSON.parse(jsonString)
 
-  const result: ResultType = {
-    version: 1,
-    max_score: testResult.numTotalTests,
-    status: testResult.success ? 'pass' : 'fail'
+    const result: ResultType = {
+      version: 1,
+      max_score: testResult.numTotalTests,
+      status: testResult.success ? 'pass' : 'fail'
+    }
+    if (testResult.testResults) {
+      result.tests = parseAssertionResults(testResult.testResults)
+    }
+    return result
+  } catch (error) {
+    core.error(`Error parsing JSON test results:\n${error}`)
+    throw error
   }
-  if (testResult.testResults) {
-    result.tests = parseAssertionResults(testResult.testResults)
-  }
-  return result
 }
 
 /**
