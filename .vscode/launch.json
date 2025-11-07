@@ -2,14 +2,42 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "type": "node",
+      "name": "Jest tests",
+      "request": "launch",
+      "program": "${workspaceFolder}/node_modules/.bin/jest",
+      "args": [
+        "--runInBand",
+        "--watchAll=false"
+      ],
+      "cwd": "${workspaceRoot}",
+      "console": "integratedTerminal",
+      "env": {
+        "NODE_OPTIONS": "--experimental-vm-modules",
+        "NODE_NO_WARNINGS": "1"
+      },
+      "internalConsoleOptions": "neverOpen",
+      "windows": {
+        "program": "${workspaceFolder}/node_modules/jest/bin/jest"
+      }
+    },
+    {
       "name": "Debug Action",
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "npx",
       "cwd": "${workspaceRoot}",
-      "args": ["@github/local-action", ".", "src/main.ts", ".env"],
+      "args": [
+        "@github/local-action",
+        ".",
+        "src/main.ts",
+        ".env"
+      ],
       "console": "integratedTerminal",
-      "skipFiles": ["<node_internals>/**", "node_modules/**"]
+      "skipFiles": [
+        "<node_internals>/**",
+        "node_modules/**"
+      ]
     }
   ]
 }

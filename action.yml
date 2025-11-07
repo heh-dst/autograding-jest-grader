@@ -13,10 +13,6 @@ inputs:
     description: "Command to execute prior to the test, typically for environment setup or dependency installation."
     default: "npm install"
     required: false
-  timeout:
-    description: "Duration (in seconds) before the test is terminated. Defaults to 60 seconds with a maximum limit of 3600 seconds."
-    default: "60"
-    required: false
 
 # Define your outputs here.
 outputs:

@@ -7,56 +7,100 @@
  */
 import { jest } from '@jest/globals'
 import * as core from '../__fixtures__/core.js'
-import { wait } from '../__fixtures__/wait.js'
+import { exec, getExecOutput } from '../__fixtures__/exec.js'
+import { Buffer } from 'node:buffer'
 
 // Mocks should be declared before the module being tested is imported.
 jest.unstable_mockModule('@actions/core', () => core)
-jest.unstable_mockModule('../src/wait.js', () => ({ wait }))
+jest.unstable_mockModule('@actions/exec', () => ({ exec, getExecOutput }))
 
 // The module being tested should be imported dynamically. This ensures that the
 // mocks are used in place of any actual dependencies.
 const { run } = await import('../src/main.js')
 
+function mockJestReturns(numFailedTests: number, numPassedTests: number): void {
+  const exitCode = numFailedTests === 0 ? 0 : 1
+  const numTotalTests = numFailedTests + numPassedTests
+  getExecOutput.mockImplementationOnce(() =>
+    Promise.resolve({
+      exitCode,
+      stdout: JSON.stringify({
+        numFailedTests,
+        numPassedTests,
+        numTotalTests,
+        success: exitCode === 0
+      }),
+      stderr: ''
+    })
+  )
+}
+
+async function runAndDecodeResult() {
+  await run()
+  const resultBase64: string = core.setOutput.mock.lastCall![1]
+  const decodedResult = JSON.parse(
+    Buffer.from(resultBase64, 'base64').toString()
+  )
+  return decodedResult
+}
+
 describe('main.ts', () => {
   beforeEach(() => {
     // Set the action's inputs as return values from core.getInput().
-    core.getInput.mockImplementation(() => '500')
+    // core.getInput.mockImplementation(() => undefined)
 
-    // Mock the wait function so that it does not actually wait.
-    wait.mockImplementation(() => Promise.resolve('done!'))
+    exec.mockImplementation(() => Promise.resolve(0))
   })
 
   afterEach(() => {
     jest.resetAllMocks()
   })
 
-  it('Sets the time output', async () => {
-    await run()
-
-    // Verify the time output was set.
-    expect(core.setOutput).toHaveBeenNthCalledWith(
-      1,
-      'time',
-      // Simple regex to match a time string in the format HH:MM:SS.
-      expect.stringMatching(/^\d{2}:\d{2}:\d{2}/)
-    )
-  })
-
-  it('Sets a failed status', async () => {
-    // Clear the getInput mock and return an invalid value.
-    core.getInput.mockClear().mockReturnValueOnce('this is not a number')
-
-    // Clear the wait mock and return a rejected promise.
-    wait
-      .mockClear()
-      .mockRejectedValueOnce(new Error('milliseconds is not a number'))
+  it('Sets the result output', async () => {
+    mockJestReturns(0, 1)
 
     await run()
 
-    // Verify that the action was marked as failed.
-    expect(core.setFailed).toHaveBeenNthCalledWith(
-      1,
-      'milliseconds is not a number'
-    )
+    // Verify the result output was set.
+    expect(core.setOutput).toHaveBeenCalledTimes(1)
+    expect(core.setOutput).toHaveBeenCalledWith('result', expect.anything())
   })
+
+  it('Sets the version', async () => {
+    mockJestReturns(0, 1)
+
+    // Verify the result status was set.
+    const decodedResult = await runAndDecodeResult()
+    expect(decodedResult.version).toBe(1)
+  })
+
+  test.each([
+    [0, 3, 3],
+    [3, 0, 3],
+    [2, 2, 4]
+  ])(
+    'Sets the max_score with %i failed and %i passed tests',
+    async (failed, passed, expected) => {
+      mockJestReturns(failed, passed)
+
+      // Verify the result status was set.
+      const decodedResult = await runAndDecodeResult()
+      expect(decodedResult.max_score).toBe(expected)
+    }
+  )
+
+  test.each([
+    { failed: 0, passed: 3, expected: 'pass' },
+    { failed: 1, passed: 0, expected: 'fail' },
+    { failed: 2, passed: 3, expected: 'fail' }
+  ])(
+    'Sets the result status to $expected with $failed failed and $passed passed tests',
+    async ({ failed, passed, expected }) => {
+      mockJestReturns(failed, passed)
+
+      // Verify the result status was set.
+      const decodedResult = await runAndDecodeResult()
+      expect(decodedResult.status).toBe(expected)
+    }
+  )
 })
