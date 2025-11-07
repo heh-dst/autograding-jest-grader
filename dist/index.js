@@ -27342,7 +27342,7 @@ async function runTests() {
                 '--no-coverage',
                 '--no-watch',
                 '--noStackTrace',
-                '--outputFile=jest-output.json',
+                `--outputFile=${jestOutputFile}`,
                 '--silent'
             ], {
                 ignoreReturnCode: true

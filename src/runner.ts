@@ -28,7 +28,7 @@ export async function runTests(): Promise<string> {
         '--no-coverage',
         '--no-watch',
         '--noStackTrace',
-        '--outputFile=jest-output.json',
+        `--outputFile=${jestOutputFile}`,
         '--silent'
       ],
       {
