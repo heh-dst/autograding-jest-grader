@@ -27275,7 +27275,7 @@ async function run() {
         coreExports.debug('Running tests with Jest ...');
         // Log the current timestamp, wait, then log the new timestamp
         coreExports.debug(new Date().toTimeString());
-        const testOutput = await execExports.getExecOutput('npm', ['test'], {
+        const testOutput = await execExports.getExecOutput('npx', ['jest', '--json'], {
             ignoreReturnCode: true
         });
         coreExports.debug(new Date().toTimeString());

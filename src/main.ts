@@ -30,7 +30,7 @@ export async function run(): Promise<void> {
 
     // Log the current timestamp, wait, then log the new timestamp
     core.debug(new Date().toTimeString())
-    const testOutput = await exec.getExecOutput('npm', ['test'], {
+    const testOutput = await exec.getExecOutput('npx', ['jest', '--json'], {
       ignoreReturnCode: true
     })
     core.debug(new Date().toTimeString())
