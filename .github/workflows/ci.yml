@@ -57,7 +57,7 @@ jobs:
         id: test-action
         uses: ./
         with:
-          setup-command: "npm install"
+          setup-command: 'npm install'
 
       - name: Print Output
         id: output
