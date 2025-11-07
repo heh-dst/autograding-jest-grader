@@ -21,15 +21,23 @@ const { run } = await import('../src/main.js')
 function mockJestReturns(numFailedTests: number, numPassedTests: number): void {
   const exitCode = numFailedTests === 0 ? 0 : 1
   const numTotalTests = numFailedTests + numPassedTests
+  const jestJson = JSON.stringify({
+    numFailedTests,
+    numPassedTests,
+    numTotalTests,
+    success: exitCode === 0
+  })
+  const fullOutput = `
+> autograding-jest-grader@v1.0.1 test
+> cross-env NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 npx jest --json
+
+${jestJson}
+`
+
   getExecOutput.mockImplementationOnce(() =>
     Promise.resolve({
       exitCode,
-      stdout: JSON.stringify({
-        numFailedTests,
-        numPassedTests,
-        numTotalTests,
-        success: exitCode === 0
-      }),
+      stdout: fullOutput,
       stderr: ''
     })
   )

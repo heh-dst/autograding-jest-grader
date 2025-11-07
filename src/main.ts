@@ -35,7 +35,15 @@ export async function run(): Promise<void> {
     })
     core.debug(new Date().toTimeString())
 
-    const testResult = JSON.parse(testOutput.stdout)
+    let testResult
+    for (const line of testOutput.stdout.split('\n')) {
+      core.debug(line)
+      if (line.startsWith('{') && line.endsWith('}')) {
+        testResult = JSON.parse(line)
+        break
+      }
+    }
+
     const result: OutputType = {
       version: 1,
       max_score: testResult.numTotalTests,
