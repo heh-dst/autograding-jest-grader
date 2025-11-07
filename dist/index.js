@@ -27279,7 +27279,14 @@ async function run() {
             ignoreReturnCode: true
         });
         coreExports.debug(new Date().toTimeString());
-        const testResult = JSON.parse(testOutput.stdout);
+        let testResult;
+        for (const line of testOutput.stdout.split('\n')) {
+            coreExports.debug(line);
+            if (line.startsWith('{') && line.endsWith('}')) {
+                testResult = JSON.parse(line);
+                break;
+            }
+        }
         const result = {
             version: 1,
             max_score: testResult.numTotalTests,
