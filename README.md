@@ -1,9 +1,9 @@
 # Create a GitHub Action Using TypeScript
 
-![Linter](https://github.com/actions/typescript-action/actions/workflows/linter.yml/badge.svg)
-![CI](https://github.com/actions/typescript-action/actions/workflows/ci.yml/badge.svg)
-![Check dist/](https://github.com/actions/typescript-action/actions/workflows/check-dist.yml/badge.svg)
-![CodeQL](https://github.com/actions/typescript-action/actions/workflows/codeql-analysis.yml/badge.svg)
+![Linter](https://github.com/heh-dst/autograding-jest-grader/actions/workflows/linter.yml/badge.svg)
+![CI](https://github.com/heh-dst/autograding-jest-grader/actions/workflows/ci.yml/badge.svg)
+![Check dist/](https://github.com/heh-dst/autograding-jest-grader/actions/workflows/check-dist.yml/badge.svg)
+![CodeQL](https://github.com/heh-dst/autograding-jest-grader/actions/workflows/codeql-analysis.yml/badge.svg)
 ![Coverage](./badges/coverage.svg)
 
 Use this template to bootstrap the creation of a TypeScript action. :rocket:
