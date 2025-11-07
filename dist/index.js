@@ -27,6 +27,9 @@ import require$$6 from 'string_decoder';
 import require$$0$9 from 'diagnostics_channel';
 import require$$2$2 from 'child_process';
 import require$$6$1 from 'timers';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { mkdtempDisposable, readFile } from 'node:fs/promises';
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -27248,6 +27251,164 @@ var coreExports = requireCore();
 
 var execExports = requireExec();
 
+/******************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+/* global Reflect, Promise, SuppressedError, Symbol, Iterator */
+
+
+function __addDisposableResource(env, value, async) {
+    if (value !== null && value !== void 0) {
+        if (typeof value !== "object" && typeof value !== "function") throw new TypeError("Object expected.");
+        var dispose, inner;
+        if (async) {
+            if (!Symbol.asyncDispose) throw new TypeError("Symbol.asyncDispose is not defined.");
+            dispose = value[Symbol.asyncDispose];
+        }
+        if (dispose === void 0) {
+            if (!Symbol.dispose) throw new TypeError("Symbol.dispose is not defined.");
+            dispose = value[Symbol.dispose];
+            if (async) inner = dispose;
+        }
+        if (typeof dispose !== "function") throw new TypeError("Object not disposable.");
+        if (inner) dispose = function() { try { inner.call(this); } catch (e) { return Promise.reject(e); } };
+        env.stack.push({ value: value, dispose: dispose, async: async });
+    }
+    else if (async) {
+        env.stack.push({ async: true });
+    }
+    return value;
+
+}
+
+var _SuppressedError = typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+    var e = new Error(message);
+    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+};
+
+function __disposeResources(env) {
+    function fail(e) {
+        env.error = env.hasError ? new _SuppressedError(e, env.error, "An error was suppressed during disposal.") : e;
+        env.hasError = true;
+    }
+    var r, s = 0;
+    function next() {
+        while (r = env.stack.pop()) {
+            try {
+                if (!r.async && s === 1) return s = 0, env.stack.push(r), Promise.resolve().then(next);
+                if (r.dispose) {
+                    var result = r.dispose.call(r.value);
+                    if (r.async) return s |= 2, Promise.resolve(result).then(next, function(e) { fail(e); return next(); });
+                }
+                else s |= 1;
+            }
+            catch (e) {
+                fail(e);
+            }
+        }
+        if (s === 1) return env.hasError ? Promise.reject(env.error) : Promise.resolve();
+        if (env.hasError) throw env.error;
+    }
+    return next();
+}
+
+async function runTests() {
+    coreExports.debug('Running tests with Jest ...');
+    try {
+        const env_1 = { stack: [], error: void 0, hasError: false };
+        try {
+            // Log the current timestamp, wait, then log the new timestamp
+            coreExports.debug(new Date().toTimeString());
+            const jestOutputDir = __addDisposableResource(env_1, await mkdtempDisposable(join(tmpdir(), 'jest-output-')), true);
+            const jestOutputFile = join(jestOutputDir.path, 'jest-output.json');
+            coreExports.debug(`Using temporary directory: ${jestOutputDir.path}`);
+            await execExports.exec('npm', [
+                'run',
+                'test',
+                '--',
+                '--json',
+                '--no-color',
+                '--no-coverage',
+                '--no-watch',
+                '--noStackTrace',
+                '--outputFile=jest-output.json',
+                '--silent'
+            ], {
+                ignoreReturnCode: true
+            });
+            const output = await readFile(jestOutputFile, { encoding: 'utf-8' });
+            coreExports.debug(new Date().toTimeString());
+            return output;
+        }
+        catch (e_1) {
+            env_1.error = e_1;
+            env_1.hasError = true;
+        }
+        finally {
+            const result_1 = __disposeResources(env_1);
+            if (result_1)
+                await result_1;
+        }
+    }
+    catch (error) {
+        coreExports.debug('Error during test execution:');
+        if (error instanceof Error) {
+            coreExports.debug(error.message);
+        }
+        throw error;
+    }
+}
+
+async function runSetupCommandIfProvided() {
+    const setupCommand = coreExports.getInput('setup-command');
+    if (setupCommand) {
+        coreExports.debug(`Executing setup command: ${setupCommand} ...`);
+        return execExports.exec(setupCommand);
+    }
+    else {
+        coreExports.debug('No setup command provided, executing default: npm install ...');
+        return execExports.exec('npm', ['install'], {});
+    }
+}
+function parseAssertionResult(assertionResult) {
+    const testResult = {
+        name: assertionResult.fullName,
+        status: assertionResult.status === 'passed'
+            ? 'pass'
+            : assertionResult.status === 'failed'
+                ? 'fail'
+                : 'error'
+    };
+    return testResult;
+}
+function parseAssertionResults(testResults) {
+    return testResults.flatMap((testResult) => {
+        return testResult.assertionResults.map((assertionResult) => parseAssertionResult(assertionResult));
+    });
+}
+function parseJson(jsonString) {
+    const testResult = JSON.parse(jsonString.replaceAll('\\', '\\\\'));
+    const result = {
+        version: 1,
+        max_score: testResult.numTotalTests,
+        status: testResult.success ? 'pass' : 'fail'
+    };
+    if (testResult.testResults) {
+        result.tests = parseAssertionResults(testResult.testResults);
+    }
+    return result;
+}
 /**
  * The main function for the action.
  *
@@ -27255,45 +27416,17 @@ var execExports = requireExec();
  */
 async function run() {
     try {
-        const setupCommand = coreExports.getInput('setup-command');
-        if (setupCommand) {
-            coreExports.debug(`Executing setup command: ${setupCommand} ...`);
-            await execExports.exec(setupCommand);
-        }
-        else {
-            coreExports.debug('No setup command provided, executing default: npm install ...');
-            await execExports.exec('npm', ['install'], {});
-        }
-        // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-        coreExports.debug('Running tests with Jest ...');
-        // Log the current timestamp, wait, then log the new timestamp
-        coreExports.debug(new Date().toTimeString());
-        const testOutput = await execExports.getExecOutput('npx', ['jest', '--json'], {
-            ignoreReturnCode: true
-        });
-        coreExports.debug(new Date().toTimeString());
-        let testResult;
-        for (const line of testOutput.stdout.split('\n')) {
-            coreExports.debug(line);
-            if (line.startsWith('{') && line.endsWith('}')) {
-                testResult = JSON.parse(line);
-                break;
-            }
-        }
-        const result = {
-            version: 1,
-            max_score: testResult.numTotalTests,
-            status: testResult.success ? 'pass' : 'fail'
-        };
-        if (testResult.testResults) {
-            result['tests'] = testResult.testResults;
-        }
+        await runSetupCommandIfProvided();
+        const testOutput = await runTests();
+        const result = parseJson(testOutput);
         coreExports.setOutput('result', Buffer.from(JSON.stringify(result)).toString('base64'));
     }
     catch (error) {
         // Fail the workflow run if an error occurs
-        if (error instanceof Error)
+        if (error instanceof Error) {
+            coreExports.error(error.message);
             coreExports.setFailed(error.message);
+        }
     }
 }
 

@@ -1,11 +1,61 @@
+import type {
+  AssertionResult,
+  FormattedTestResults,
+  ResultType,
+  TestResult,
+  TestType
+} from './types.ts'
+
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
+import { runTests } from './runner.js'
 
-type OutputType = {
-  version: number
-  max_score: number
-  status: 'pass' | 'fail'
-  tests?: unknown[]
+async function runSetupCommandIfProvided(): Promise<number> {
+  const setupCommand: string = core.getInput('setup-command')
+  if (setupCommand) {
+    core.debug(`Executing setup command: ${setupCommand} ...`)
+    return exec.exec(setupCommand)
+  } else {
+    core.debug('No setup command provided, executing default: npm install ...')
+    return exec.exec('npm', ['install'], {})
+  }
+}
+
+function parseAssertionResult(assertionResult: AssertionResult): TestType {
+  const testResult: TestType = {
+    name: assertionResult.fullName,
+    status:
+      assertionResult.status === 'passed'
+        ? 'pass'
+        : assertionResult.status === 'failed'
+          ? 'fail'
+          : 'error'
+  }
+  return testResult
+}
+
+function parseAssertionResults(testResults: TestResult[]): TestType[] {
+  return testResults.flatMap((testResult: TestResult) => {
+    return testResult.assertionResults.map((assertionResult) =>
+      parseAssertionResult(assertionResult)
+    )
+  })
+}
+
+function parseJson(jsonString: string): ResultType {
+  const testResult: FormattedTestResults = JSON.parse(
+    jsonString.replaceAll('\\', '\\\\')
+  )
+
+  const result: ResultType = {
+    version: 1,
+    max_score: testResult.numTotalTests,
+    status: testResult.success ? 'pass' : 'fail'
+  }
+  if (testResult.testResults) {
+    result.tests = parseAssertionResults(testResult.testResults)
+  }
+  return result
 }
 
 /**
@@ -15,50 +65,20 @@ type OutputType = {
  */
 export async function run(): Promise<void> {
   try {
-    const setupCommand: string = core.getInput('setup-command')
-    if (setupCommand) {
-      core.debug(`Executing setup command: ${setupCommand} ...`)
-      await exec.exec(setupCommand)
-    } else {
-      core.debug(
-        'No setup command provided, executing default: npm install ...'
-      )
-      await exec.exec('npm', ['install'], {})
-    }
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    core.debug('Running tests with Jest ...')
+    await runSetupCommandIfProvided()
 
-    // Log the current timestamp, wait, then log the new timestamp
-    core.debug(new Date().toTimeString())
-    const testOutput = await exec.getExecOutput('npx', ['jest', '--json'], {
-      ignoreReturnCode: true
-    })
-    core.debug(new Date().toTimeString())
+    const testOutput = await runTests()
 
-    let testResult
-    for (const line of testOutput.stdout.split('\n')) {
-      core.debug(line)
-      if (line.startsWith('{') && line.endsWith('}')) {
-        testResult = JSON.parse(line)
-        break
-      }
-    }
-
-    const result: OutputType = {
-      version: 1,
-      max_score: testResult.numTotalTests,
-      status: testResult.success ? 'pass' : 'fail'
-    }
-    if (testResult.testResults) {
-      result['tests'] = testResult.testResults
-    }
-
+    const result = parseJson(testOutput)
     core.setOutput(
       'result',
       Buffer.from(JSON.stringify(result)).toString('base64')
     )
   } catch (error) {
     // Fail the workflow run if an error occurs
-    if (error instanceof Error) core.setFailed(error.message)
+    if (error instanceof Error) {
+      core.error(error.message)
+      core.setFailed(error.message)
+    }
   }
 }

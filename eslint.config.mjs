@@ -51,6 +51,7 @@ export default [
         projectService: {
           allowDefaultProject: [
             '__fixtures__/*.ts',
+            '__mocks__/*.ts',
             '__tests__/*.ts',
             'eslint.config.mjs',
             'jest.config.js',
