@@ -56,6 +56,16 @@ describe('main.ts', () => {
     jest.resetAllMocks()
   })
 
+  it('Executes the setup command when provided', async () => {
+    const setupCommand = 'echo "Setting up..."'
+    core.getInput.mockImplementationOnce(() => setupCommand)
+
+    await run()
+
+    // Verify the setup command was executed.
+    expect(exec).toHaveBeenCalledWith(setupCommand)
+  })
+
   it('Sets the result output', async () => {
     mockJestReturns(0, 1)
 
@@ -131,5 +141,17 @@ describe('main.ts', () => {
         status: 'passed'
       }
     ])
+  })
+
+  it('Fails the action on error', async () => {
+    const errorMessage = 'An unexpected error occurred.'
+    exec.mockImplementationOnce(() => {
+      throw new Error(errorMessage)
+    })
+
+    await run()
+
+    // Verify the action was failed with the error message.
+    expect(core.setFailed).toHaveBeenCalledWith(errorMessage)
   })
 })
