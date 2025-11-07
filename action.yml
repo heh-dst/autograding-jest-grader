@@ -10,14 +10,18 @@ branding:
 # Define your inputs here.
 inputs:
   setup-command:
-    description: "Command to execute prior to the test, typically for environment setup or dependency installation."
-    default: "npm install"
+    description:
+      'Command to execute prior to the test, typically for environment setup or
+      dependency installation.'
+    default: 'npm install'
     required: false
 
 # Define your outputs here.
 outputs:
   result:
-    description: "Outputs the result of the grader, indicating the success or failure of the test."
+    description:
+      'Outputs the result of the grader, indicating the success or failure of
+      the test.'
 
 runs:
   using: node24

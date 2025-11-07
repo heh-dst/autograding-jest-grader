@@ -27253,19 +27253,7 @@ function requireCore () {
 
 var coreExports = requireCore();
 
-/**
- * Waits for a number of milliseconds.
- *
- * @param milliseconds The number of milliseconds to wait.
- * @returns Resolves with 'done!' after the wait is over.
- */
-async function wait(milliseconds) {
-    return new Promise((resolve) => {
-        if (isNaN(milliseconds))
-            throw new Error('milliseconds is not a number');
-        setTimeout(() => resolve('done!'), milliseconds);
-    });
-}
+var execExports = requireExec();
 
 /**
  * The main function for the action.
@@ -27274,15 +27262,33 @@ async function wait(milliseconds) {
  */
 async function run() {
     try {
-        const ms = coreExports.getInput('milliseconds');
+        const setupCommand = coreExports.getInput('setup-command');
+        if (setupCommand) {
+            coreExports.debug(`Executing setup command: ${setupCommand} ...`);
+            await execExports.exec(setupCommand);
+        }
+        else {
+            coreExports.debug('No setup command provided, executing default: npm install ...');
+            await execExports.exec('npm', ['install'], {});
+        }
         // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-        coreExports.debug(`Waiting ${ms} milliseconds ...`);
+        coreExports.debug('Running tests with Jest ...');
         // Log the current timestamp, wait, then log the new timestamp
         coreExports.debug(new Date().toTimeString());
-        await wait(parseInt(ms, 10));
+        const testOutput = await execExports.getExecOutput('npm', ['test'], {
+            ignoreReturnCode: true
+        });
         coreExports.debug(new Date().toTimeString());
-        // Set outputs for other workflow steps to use
-        coreExports.setOutput('time', new Date().toTimeString());
+        const testResult = JSON.parse(testOutput.stdout);
+        const result = {
+            version: 1,
+            max_score: testResult.numTotalTests,
+            status: testResult.success ? 'pass' : 'fail'
+        };
+        if (testResult.testResults) {
+            result['tests'] = testResult.testResults;
+        }
+        coreExports.setOutput('result', Buffer.from(JSON.stringify(result)).toString('base64'));
     }
     catch (error) {
         // Fail the workflow run if an error occurs
